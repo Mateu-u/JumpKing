@@ -1,266 +1,167 @@
+// main.cpp
+
 #include <SFML/Graphics.hpp>
+#include <iostream>
+#include <filesystem>      // wymaga C++17
+#include <map>
 #include <vector>
-#include <cstdlib>
-#include <ctime>
-#include <string>
+#include "Player.h"
+#include "PlatformGenerator.h"
 
 // -----------------------------------------------------------------------------
 // Parametry gry
 // -----------------------------------------------------------------------------
-const float GRAVITY         = 0.5f;
-const float MOVE_SPEED      = 4.0f;     // prędkość przesuwania na ziemi
-const float JUMP_CHARGE_SP  = 0.7f;     // szybkość ładowania siły skoku
-const float MAX_JUMP_FORCE  = 18.0f;    // maksymalna siła skoku
-const int   WINDOW_WIDTH    = 1280;
-const int   WINDOW_HEIGHT   = 720;
+const int   WINDOW_WIDTH    = 1540;
+const int   WINDOW_HEIGHT   = 920;
+const float MAX_JUMP_FORCE  = 18.0f;
 
-// -----------------------------------------------------------------------------
-// Klasa gracza
-// -----------------------------------------------------------------------------
-class Player {
-public:
-    sf::Sprite        sprite;
-    sf::Texture       texture;
-    sf::Vector2f      velocity;
-    bool              isOnGround     = false;
-    float             jumpCharge     = 0.0f;
-    bool              chargingJump   = false;
-    bool              facingRight    = true;
-    int               lastLandedPlat = -1;
+// Ścieżka do folderu z grafikami
+const std::string RES_DIR   = "debug/tekstury/";
 
-    Player(float x, float y, float scale = 0.15f) {
-        if (!texture.loadFromFile("tekstury/testPlayer.png")) {
-            sf::Image placeholder;
-            placeholder.create(200, 200, sf::Color::Red);
-            texture.loadFromImage(placeholder);
-        }
-        sprite.setTexture(texture);
-        sprite.setOrigin(texture.getSize().x / 2.0f, texture.getSize().y / 2.0f);
-        sprite.setScale(scale, scale);
-        sprite.setPosition(x, y);
-    }
-    // Skok
-    void handleInput() {
-        if (!chargingJump && isOnGround) {
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
-                sprite.move(-MOVE_SPEED, 0);
-                facingRight = false;
-                sprite.setScale(-std::abs(sprite.getScale().x), sprite.getScale().y);
-            }
-            else if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
-                sprite.move(MOVE_SPEED, 0);
-                facingRight = true;
-                sprite.setScale(std::abs(sprite.getScale().x), sprite.getScale().y);
-            }
-        }
-
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) {
-            if (isOnGround) {
-                chargingJump = true;
-                jumpCharge += JUMP_CHARGE_SP;
-                if (jumpCharge > MAX_JUMP_FORCE)
-                    jumpCharge = MAX_JUMP_FORCE;
-            }
-        }
-        else if (chargingJump) {
-            velocity.y = -jumpCharge;
-
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
-                velocity.x = -jumpCharge / 2.0f;
-            }
-            else if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
-                velocity.x = jumpCharge / 2.0f;
-            }
-            else {
-                velocity.x = 0.f;
-            }
-            jumpCharge   = 0;
-            chargingJump = false;
-            isOnGround   = false;
-        }
-
-
-    }
-
-    void applyGravity() {
-        if (!isOnGround)
-            velocity.y += GRAVITY;
-        sprite.move(0, velocity.y);
-    }
-
-        void applyVelocityX() {
-            sprite.move(velocity.x, 0);
-            if (isOnGround)
-                velocity.x *= 0.1f;
-        }
-
-        int checkCollisions(const sf::FloatRect& prevBounds,
-                            const sf::FloatRect& currBounds,
-                            std::vector<sf::RectangleShape>& platforms)
-        {
-            isOnGround = false;
-            int landedIndex = -1;
-
-            for (int i = 0; i < static_cast<int>(platforms.size()); ++i) {
-                const auto& plat = platforms[i];
-                sf::FloatRect platBounds = plat.getGlobalBounds();
-
-                if (currBounds.intersects(platBounds)) {
-                    float prevBottom = prevBounds.top + prevBounds.height;
-                    float currBottom = currBounds.top + currBounds.height;
-
-                    float prevTop = prevBounds.top;
-                    float currTop = currBounds.top;
-
-                    // Lądowanie na platformie (kolizja od góry)
-                    if (prevBottom <= platBounds.top && velocity.y >= 0) {
-                        sprite.setPosition(sprite.getPosition().x, platBounds.top - currBounds.height / 2.f);
-                        velocity.y = 0.f;
-                        isOnGround = true;
-                        landedIndex = i;
-                    }
-
-                    // Uderzenie od dołu (głową)
-                    else if (prevTop >= platBounds.top + platBounds.height && velocity.y < 0) {
-                        sprite.setPosition(sprite.getPosition().x, platBounds.top + platBounds.height + currBounds.height / 2.f);
-                        velocity.y = 0.f;
-                    }
-                }
-            }
-
-            return landedIndex;
-        }
-
-
-
-    void draw(sf::RenderWindow& window) {
-        window.draw(sprite);
-    }
-};
-
-// -----------------------------------------------------------------------------
-// Generowanie platform
-// -----------------------------------------------------------------------------
-std::vector<sf::RectangleShape> createJumpKingPlatforms()
-{
-    std::vector<sf::RectangleShape> platforms;
-    platforms.reserve(100);
-
-    {
-        sf::RectangleShape floor;
-        floor.setSize({ static_cast<float>(WINDOW_WIDTH), 20.f });
-        floor.setFillColor(sf::Color(100, 100, 100));
-        floor.setPosition(0.f, static_cast<float>(WINDOW_HEIGHT - 20));
-        platforms.push_back(floor);
-    }
-
-    std::srand(static_cast<unsigned>(std::time(nullptr)));
-    float baseY = static_cast<float>(WINDOW_HEIGHT - 20);
-    for (int i = 1; i <= 100; ++i) {
-        sf::RectangleShape plat;
-        float y = baseY - i * 150.f;
-        float x = static_cast<float>(std::rand() % (WINDOW_WIDTH - 250) + 50);
-        plat.setSize({ 200.f, 20.f });
-        plat.setFillColor(sf::Color(100, 200, 100));
-        plat.setPosition(x, y);
-        platforms.push_back(plat);
-    }
-
-    return platforms;
-}
-
-// -----------------------------------------------------------------------------
-// Główna funkcja
-// -----------------------------------------------------------------------------
 int main()
 {
+    // Debug: sprawdź working directory
+    std::cout << "Working dir: " << std::filesystem::current_path() << "\n";
+
+    // Okno
     sf::RenderWindow window(
         sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT),
-        "Jump King",
-        sf::Style::Titlebar | sf::Style::Close
+        "Jump King"
         );
     window.setFramerateLimit(60);
 
-    float initialX = WINDOW_WIDTH / 2.0f;
-    float initialY = WINDOW_HEIGHT - 120;
-    Player player(initialX, initialY, 0.15f);
+    // 1) Tło
+    sf::Texture bgTex;
+    if (!bgTex.loadFromFile(RES_DIR + "background.png")) {
+        std::cerr << "ERROR loading background\n";
+        sf::Image img; img.create(WINDOW_WIDTH, WINDOW_HEIGHT, sf::Color(20,20,40));
+        bgTex.loadFromImage(img);
+    }
+    sf::Sprite bgSprite(bgTex);
 
-    auto platforms = createJumpKingPlatforms();
+    // 2) Tekstury gracza
+    std::map<std::string, sf::Texture> textures;
+    for (auto name : {"idle","jump_charge","jump","fall"}) {
+        sf::Texture t;
+        if (!t.loadFromFile(RES_DIR + "player_" + name + ".png")) {
+            std::cerr << "ERROR loading player texture: " << name << "\n";
+            sf::Image ph; ph.create(256,256, sf::Color::Red);
+            t.loadFromImage(ph);
+        }
+        t.setSmooth(false);
+        textures[name] = t;
+    }
 
-    sf::View view(sf::FloatRect(0, 0, static_cast<float>(WINDOW_WIDTH), static_cast<float>(WINDOW_HEIGHT)));
+    // 3) Wczytanie tekstury platform
+    sf::Texture platformTex;
+    if (!platformTex.loadFromFile(RES_DIR + "platform.png")) {
+        std::cerr << "ERROR loading platform.png\n";
+    }
+    platformTex.setRepeated(true);
 
-    sf::Text scoreText;
-    scoreText.setCharacterSize(24);
-    scoreText.setFillColor(sf::Color::White);
-    scoreText.setPosition(10.f, 10.f);
+    // 4) Pierwotne kształty platform (kolorowe, tylko pozycje+rozmiary)
+    auto shapePlatforms = createJumpKingPlatforms(WINDOW_WIDTH, WINDOW_HEIGHT);
 
+    // 5) Konwersja na sprite'y z teksturą
+    std::vector<sf::Sprite> platforms;
+    platforms.reserve(shapePlatforms.size());
+    for (auto& shape : shapePlatforms) {
+        sf::Sprite spr(platformTex);
+        // ustaw region tekstury równy rozmiarowi shape'a
+        auto sz = shape.getSize();
+        spr.setTextureRect({0, 0,
+                            static_cast<int>(sz.x),
+                            static_cast<int>(sz.y)});
+        // ustaw pozycję
+        spr.setPosition(shape.getPosition());
+        platforms.push_back(spr);
+    }
+
+    // 6) Gracz
+    Player player(
+        WINDOW_WIDTH/2.f,
+        WINDOW_HEIGHT - 120.f,
+        textures,
+        0.15f
+        );
+
+    sf::View view({0,0,(float)WINDOW_WIDTH,(float)WINDOW_HEIGHT});
+    sf::FloatRect prevBounds = player.sprite.getGlobalBounds();
     int score = 0;
 
-    sf::RectangleShape jumpBarBack({ 200.f, 20.f });
-    jumpBarBack.setFillColor(sf::Color(50, 50, 50, 200));
-    jumpBarBack.setPosition(10.f, 40.f);
+    // 7) HUD
+    sf::Font font;
+    if (!font.loadFromFile(RES_DIR + "arial.ttf"))
+        std::cerr << "ERROR loading font\n";
+    sf::Text scoreText("Score: 0", font, 24);
+    scoreText.setFillColor(sf::Color::White);
+    scoreText.setPosition(10, 10);
 
-    sf::RectangleShape jumpBarFront({ 0.f, 20.f });
-    jumpBarFront.setFillColor(sf::Color(150, 150, 250, 200));
-    jumpBarFront.setPosition(10.f, 40.f);
+    sf::RectangleShape barBack({200,20});
+    barBack.setFillColor(sf::Color(50,50,50,200));
+    barBack.setPosition(10,40);
+    sf::RectangleShape barFront({0,20});
+    barFront.setFillColor(sf::Color(150,150,250,200));
+    barFront.setPosition(10,40);
 
-    sf::FloatRect prevBounds = player.sprite.getGlobalBounds();
-
+    // 8) Pętla gry
     while (window.isOpen()) {
-        sf::Clock clock;
-        float dt = clock.restart().asSeconds();
-
-        sf::Event event;
-        while (window.pollEvent(event)) {
-            if (event.type == sf::Event::Closed)
+        sf::Event e;
+        while (window.pollEvent(e))
+            if (e.type == sf::Event::Closed)
                 window.close();
-        }
 
+        // Logika
         player.handleInput();
         prevBounds = player.sprite.getGlobalBounds();
-
         player.applyVelocityX();
         player.applyGravity();
 
-        // Sprawdzenie kolizji
-        sf::FloatRect currBounds = player.sprite.getGlobalBounds();
-        int landedIndex = player.checkCollisions(prevBounds, currBounds, platforms);
-        if (landedIndex != -1 && landedIndex != player.lastLandedPlat) {
+        // Kolizje i score
+        auto currBounds = player.sprite.getGlobalBounds();
+        int landed = player.checkCollisions(prevBounds, currBounds, shapePlatforms);
+        if (landed != -1 && landed != player.lastLandedPlat) {
             score += 10;
-            player.lastLandedPlat = landedIndex;
+            player.lastLandedPlat = landed;
         }
 
-        // Reset, jeśli gracz spadł poza dół ekranu
-        if (player.sprite.getPosition().y - (currBounds.height / 2.0f) > WINDOW_HEIGHT) {
-            player.sprite.setPosition(initialX, initialY);
-            player.velocity = { 0.f, 0.f };
-            player.jumpCharge = 0.f;
+        // Reset po upadku
+        if (player.sprite.getPosition().y - currBounds.height/2.f > WINDOW_HEIGHT) {
+            player.sprite.setPosition(WINDOW_WIDTH/2.f, WINDOW_HEIGHT - 120.f);
+            player.velocity = {0,0};
+            player.jumpCharge   = 0.f;
             player.chargingJump = false;
-            player.isOnGround = false;
+            player.isOnGround   = false;
             player.lastLandedPlat = -1;
             score = 0;
-
-            view.setCenter(WINDOW_WIDTH / 2.f, WINDOW_HEIGHT / 2.f);
+            view.setCenter(WINDOW_WIDTH/2.f, WINDOW_HEIGHT/2.f);
         }
 
+        player.updateAnimationState();
 
-        window.clear(sf::Color(30, 30, 50));
-        window.setView(view);
+        // Render
+        window.clear();
 
-        for (auto& plat : platforms) {
-            window.draw(plat);
-        }
-        player.draw(window);
+        // Tło (fixed view)
         window.setView(window.getDefaultView());
+        window.draw(bgSprite);
 
+        // Platformy (fixed view)
+        for (auto& spr : platforms)
+            window.draw(spr);
+
+        // Gracz (kamera)
+        window.setView(view);
+        player.draw(window);
+
+        // HUD (fixed view)
+        window.setView(window.getDefaultView());
         scoreText.setString("Score: " + std::to_string(score));
         window.draw(scoreText);
-
-        // Pasek ładowania skoku
-        window.draw(jumpBarBack);
-        float barWidth = (player.jumpCharge / MAX_JUMP_FORCE) * jumpBarBack.getSize().x;
-        jumpBarFront.setSize({ barWidth, jumpBarFront.getSize().y });
-        window.draw(jumpBarFront);
+        window.draw(barBack);
+        float w = (player.jumpCharge / MAX_JUMP_FORCE) * barBack.getSize().x;
+        barFront.setSize({ w, barFront.getSize().y });
+        window.draw(barFront);
 
         window.display();
     }

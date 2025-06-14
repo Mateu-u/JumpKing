@@ -15,11 +15,14 @@ public:
     void handleInput();
     void applyGravity();
     void applyVelocityX();
+    int currentLevel;
     int  checkCollisions(const sf::FloatRect& prevBounds,
                         const sf::FloatRect& currBounds,
                         std::vector<sf::RectangleShape>& platforms);
     void updateAnimationState();
     void draw(sf::RenderWindow& window);
+    int getCurrentLevel() const { return currentLevel; };
+    void setCurrentLevel(int level) { currentLevel = level; };
 
     sf::Sprite    sprite;
     sf::Vector2f  velocity;

@@ -2,7 +2,6 @@
 
 #include <SFML/Graphics.hpp>
 #include <iostream>
-#include <filesystem>      // wymaga C++17
 #include <map>
 #include <vector>
 #include "Player.h"
@@ -14,15 +13,13 @@
 const int   WINDOW_WIDTH    = 1540;
 const int   WINDOW_HEIGHT   = 920;
 const float MAX_JUMP_FORCE  = 18.0f;
+const int NUM_LEVELS = 3;
 
 // Ścieżka do folderu z grafikami
-const std::string RES_DIR   = "debug/tekstury/";
+const std::string RES_DIR   = "tekstury/";
 
 int main()
 {
-    // Debug: sprawdź working directory
-    std::cout << "Working dir: " << std::filesystem::current_path() << "\n";
-
     // Okno
     sf::RenderWindow window(
         sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT),
@@ -31,13 +28,18 @@ int main()
     window.setFramerateLimit(60);
 
     // 1) Tło
-    sf::Texture bgTex;
-    if (!bgTex.loadFromFile(RES_DIR + "background.png")) {
-        std::cerr << "ERROR loading background\n";
-        sf::Image img; img.create(WINDOW_WIDTH, WINDOW_HEIGHT, sf::Color(20,20,40));
-        bgTex.loadFromImage(img);
+    std::vector<sf::Texture> backgroundTextures;
+    for (int i = 0; i < NUM_LEVELS; ++i) {
+        sf::Texture bgTex;
+        if (!bgTex.loadFromFile(RES_DIR + "background_" + std::to_string(i+1) + ".png")) {
+            std::cerr << "ERROR loading background for level " << i+1 << "\n";
+            sf::Image img; img.create(WINDOW_WIDTH, WINDOW_HEIGHT, sf::Color(20,20,40 + i*20));
+            bgTex.loadFromImage(img);
+        }
+        backgroundTextures.push_back(bgTex);
     }
-    sf::Sprite bgSprite(bgTex);
+
+    sf::Sprite bgSprite(backgroundTextures[0]); // Początkowe tło
 
     // 2) Tekstury gracza
     std::map<std::string, sf::Texture> textures;
@@ -54,13 +56,67 @@ int main()
 
     // 3) Wczytanie tekstury platform
     sf::Texture platformTex;
-    if (!platformTex.loadFromFile(RES_DIR + "platform.png")) {
+    if (!platformTex.loadFromFile(RES_DIR + "testWall.png")) {
         std::cerr << "ERROR loading platform.png\n";
     }
     platformTex.setRepeated(true);
 
     // 4) Pierwotne kształty platform (kolorowe, tylko pozycje+rozmiary)
-    auto shapePlatforms = createJumpKingPlatforms(WINDOW_WIDTH, WINDOW_HEIGHT);
+    std::vector<std::vector<std::string>> level = {
+    {
+        "##             #",
+        "##       #######",
+        "##           ###",
+        "##             #",
+        "####           #",
+        "########       #",
+        "#####          #",
+        "##             #",
+        "##           ###",
+        "#        #######",
+        "#         ######",
+        "#         ######",
+        "#####     ######",
+        "################"
+    },
+    {
+        "#              #",
+        "###      #######",
+        "#              #",
+        "#              #",
+        "#              #",
+        "#  #####       #",
+        "#              #",
+        "#           ####",
+        "####           #",
+        "#              #",
+        "#        ####  #",
+        "#              #",
+        "#####          #",
+        "#              #"
+    },
+    {
+        "################",
+        "##       #######",
+        "##           ###",
+        "##             #",
+        "####           #",
+        "#####          #",
+        "########       #",
+        "##             #",
+        "##           ###",
+        "#         ######",
+        "#       ########",
+        "#              #",
+        "####       #####",
+        "#              #"
+    }
+    };
+
+    float tileH = WINDOW_HEIGHT / static_cast<float>(level[0].size());
+    float tileW = WINDOW_WIDTH / static_cast<float>(level[0][0].size());
+    auto shapePlatforms = createPlatformsFromMap(level[0], tileW, tileH);
+
 
     // 5) Konwersja na sprite'y z teksturą
     std::vector<sf::Sprite> platforms;
@@ -80,9 +136,9 @@ int main()
     // 6) Gracz
     Player player(
         WINDOW_WIDTH/2.f,
-        WINDOW_HEIGHT - 120.f,
+        WINDOW_HEIGHT - 220.f,
         textures,
-        0.15f
+        0.10f
         );
 
     sf::View view({0,0,(float)WINDOW_WIDTH,(float)WINDOW_HEIGHT});
@@ -119,15 +175,72 @@ int main()
 
         // Kolizje i score
         auto currBounds = player.sprite.getGlobalBounds();
+
         int landed = player.checkCollisions(prevBounds, currBounds, shapePlatforms);
         if (landed != -1 && landed != player.lastLandedPlat) {
             score += 10;
             player.lastLandedPlat = landed;
         }
 
+// Przy przejściu do wyższego poziomu:
+if (player.sprite.getPosition().y + player.sprite.getGlobalBounds().height/2 < 0) {
+    int newLevel = player.getCurrentLevel() + 1;
+    if (newLevel < NUM_LEVELS) {
+        player.setCurrentLevel(newLevel);
+
+        // Zmień tło
+        bgSprite.setTexture(backgroundTextures[newLevel]);
+
+        // Załaduj nowe platformy
+        shapePlatforms = createPlatformsFromMap(level[newLevel], tileW, tileH);
+        platforms.clear();
+        for (auto& shape : shapePlatforms) {
+            sf::Sprite spr(platformTex);
+            spr.setTextureRect({0, 0, static_cast<int>(shape.getSize().x),
+                              static_cast<int>(shape.getSize().y)});
+            spr.setPosition(shape.getPosition());
+            platforms.push_back(spr);
+        }
+
+        // Zachowaj prędkość i pozycję X, tylko przenieś w dół ekranu
+        player.sprite.setPosition(
+            player.sprite.getPosition().x, // Zachowaj X
+            WINDOW_HEIGHT - 10.f // Ustaw na samym dole ekranu
+        );
+    }
+}
+
+// Przy spadaniu na niższy poziom:
+if (player.sprite.getPosition().y - player.sprite.getGlobalBounds().height/2 > WINDOW_HEIGHT) {
+    int newLevel = player.getCurrentLevel() - 1;
+    if (newLevel >= 0) {
+        player.setCurrentLevel(newLevel);
+
+        // Zmień tło
+        bgSprite.setTexture(backgroundTextures[newLevel]);
+
+        // Załaduj nowe platformy
+        shapePlatforms = createPlatformsFromMap(level[newLevel], tileW, tileH);
+        platforms.clear();
+        for (auto& shape : shapePlatforms) {
+            sf::Sprite spr(platformTex);
+            spr.setTextureRect({0, 0, static_cast<int>(shape.getSize().x),
+                              static_cast<int>(shape.getSize().y)});
+            spr.setPosition(shape.getPosition());
+            platforms.push_back(spr);
+        }
+
+        // Zachowaj prędkość i pozycję X, tylko przenieś na górę ekranu
+        player.sprite.setPosition(
+            player.sprite.getPosition().x, // Zachowaj X
+            10.f // Ustaw na samej górze ekranu
+        );
+    }
+}
+
         // Reset po upadku
         if (player.sprite.getPosition().y - currBounds.height/2.f > WINDOW_HEIGHT) {
-            player.sprite.setPosition(WINDOW_WIDTH/2.f, WINDOW_HEIGHT - 120.f);
+            player.sprite.setPosition(WINDOW_WIDTH/2.f, WINDOW_HEIGHT - 220.f);
             player.velocity = {0,0};
             player.jumpCharge   = 0.f;
             player.chargingJump = false;

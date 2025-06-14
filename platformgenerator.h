@@ -1,13 +1,14 @@
-// PlatformGenerator.h
 #ifndef PLATFORM_GENERATOR_H
 #define PLATFORM_GENERATOR_H
 
 #include <SFML/Graphics.hpp>
 #include <vector>
+#include <string>
 
-// Tworzy wektor platform typu Jump King
-// windowWidth, windowHeight – rozmiary okna gry
+// Tworzy platformy na podstawie tekstowej mapy (znaki # = platforma)
 std::vector<sf::RectangleShape>
-createJumpKingPlatforms(int windowWidth, int windowHeight);
+createPlatformsFromMap(const std::vector<std::string>& map,
+                       float tileWidth, float tileHeight);
 
-#endif // PLATFORM_GENERATOR_H
+
+#endif

@@ -1,0 +1,13 @@
+debug/sqlite3.o
+debug/databasemanager.o
+debug/main.o
+debug/platformgenerator.o
+debug/player.o
+debug/+.o
+debug/LoginScreen.o
+debug/+.o
+debug/MenuScreen.o
+debug/+.o
+debug/PlayerSelectScreen.o
+debug/+.o
+debug/CreditsScreen.o

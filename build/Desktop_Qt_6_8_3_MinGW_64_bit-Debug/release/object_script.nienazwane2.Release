@@ -1,0 +1,13 @@
+release/sqlite3.o
+release/databasemanager.o
+release/main.o
+release/platformgenerator.o
+release/player.o
+release/+.o
+release/LoginScreen.o
+release/+.o
+release/MenuScreen.o
+release/+.o
+release/PlayerSelectScreen.o
+release/+.o
+release/CreditsScreen.o

@@ -5,7 +5,7 @@ CreditsScreen::CreditsScreen(const sf::Font& f)
 {
     std::vector<std::string> info = {
         "JumpKing Clone",
-        "Autor: Twoje Imię",
+        "Autor: Wiktor Witczak, Mateusz Tomaszewski",
         "Silnik: SFML + C++17",
         "DB: SQLite3",
         "",
@@ -27,7 +27,7 @@ CreditsScreen::CreditsScreen(const sf::Font& f)
 
 void CreditsScreen::handleEvent(const sf::Event& ev, GameState& state) {
     if (ev.type == sf::Event::KeyPressed && ev.key.code == sf::Keyboard::Escape) {
-        state = GameState::MainMenu;
+        state = GameState::Welcome;
     }
 }
 

@@ -14,6 +14,9 @@
 #include "Player.h"
 #include "PlatformGenerator.h"
 
+// Nowy ekran pauzy
+#include "PauseScreen.h"
+
 const int WINDOW_WIDTH = 1540;
 const int WINDOW_HEIGHT = 920;
 const float MAX_JUMP_FORCE = 18.0f;
@@ -66,88 +69,14 @@ int main()
     OptionsScreen options(uiFont, { (float)WINDOW_WIDTH, (float)WINDOW_HEIGHT });
     ScoreTableScreen scoreTable(uiFont);
     CreditsScreen credits(uiFont);
+    PauseScreen pauseScreen(uiFont, window.getSize());
 
     std::vector<std::vector<std::string>> levelMaps = {
-        {
-            "##             #",
-            "##       #######",
-            "##           ###",
-            "##             #",
-            "####           #",
-            "########       #",
-            "#####          #",
-            "##             #",
-            "##           ###",
-            "#        #######",
-            "#         ######",
-            "#         ######",
-            "#####     ######",
-            "################"
-        },
-        {
-            "#              #",
-            "###      #######",
-            "#              #",
-            "#              #",
-            "#              #",
-            "#  #####       #",
-            "#              #",
-            "#           ####",
-            "####           #",
-            "#              #",
-            "#        ####  #",
-            "#              #",
-            "#####          #",
-            "#              #"
-        },
-        {
-            "#              #",
-            "#              #",
-            "#        #######",
-            "#              #",
-            "###            #",
-            "#####          #",
-            "########       #",
-            "##             #",
-            "##           ###",
-            "#         ######",
-            "#       ########",
-            "#              #",
-            "####       #####",
-            "#              #"
-        },
-        {
-            "#              #",
-            "#        #######",
-            "#            ###",
-            "###            #",
-            "####           #",
-            "#####          #",
-            "########       #",
-            "##             #",
-            "##           ###",
-            "#         ######",
-            "#       ########",
-            "#              #",
-            "#          #####",
-            "#####          #"
-        },
-        {
-            "################",
-            "##       #######",
-            "##           ###",
-            "##             #",
-            "####           #",
-            "#####          #",
-            "########       #",
-            "###            #",
-            "##           ###",
-            "#         ######",
-            "#       ###   ##",
-            "#              #",
-            "####           #",
-            "#         ###  #"
-        }
+        { "##             #", "##       #######", "##           ###", "##             #", "####           #", "########       #", "#####          #", "##             #", "##           ###", "#        #######", "#         ######", "#         ######", "#####     ######", "################" },
+        { "#              #", "###      #######", "#              #", "#              #", "#              #", "#  #####       #", "#              #", "#           ####", "####           #", "#              #", "#        ####  #", "#              #", "#####          #", "#              #" },
+        { "#              #", "#              #", "#        #######", "#              #", "###            #", "#####          #", "########       #", "##             #", "##           ###", "#         ######", "#       ########", "#              #", "####       #####", "#              #" },
+        { "#              #", "#        #######", "#            ###", "###            #", "####           #", "#####          #", "########       #", "##             #", "##           ###", "#         ######", "#       ########", "#              #", "#          #####", "#####          #" },
+        { "################", "##       #######", "##           ###", "##             #", "####           #", "#####          #", "########       #", "###            #", "##           ###", "#         ######", "#       ###   ##", "#              #", "####           #", "#         ###  #" }
     };
 
     std::vector<sf::Texture> backgroundTextures;
@@ -213,13 +142,26 @@ int main()
             if (ev.type == sf::Event::Closed)
                 window.close();
 
-            switch (state) {
-            case GameState::Welcome: welcome.handleEvent(ev, state, window); break;
-            case GameState::Auth: auth.handleEvent(ev, state); break;
-            case GameState::Options: options.handleEvent(ev, state, window); break;
-            case GameState::ScoreTable: scoreTable.handleEvent(ev, state); break;
-            case GameState::Credits: credits.handleEvent(ev, state); break;
-            case GameState::Playing: player.handleInput(); break;
+            if (state == GameState::Playing && ev.type == sf::Event::KeyPressed && ev.key.code == sf::Keyboard::Escape) {
+                state = GameState::Paused;
+            }
+
+            if (state == GameState::Paused) {
+                bool resume = false;
+                bool quit = false;
+                pauseScreen.handleEvent(ev, window, resume, quit);
+                if (resume) state = GameState::Playing;
+                if (quit)   state = GameState::Welcome;
+            } else {
+                switch (state) {
+                case GameState::Welcome: welcome.handleEvent(ev, state, window); break;
+                case GameState::Auth: auth.handleEvent(ev, state, window); break;
+                case GameState::Options: options.handleEvent(ev, state, window); break;
+                case GameState::ScoreTable: scoreTable.handleEvent(ev, state, window); break;
+                case GameState::Credits: credits.handleEvent(ev, state, window); break;
+                case GameState::Playing: player.handleInput(); break;
+                default: break;
+                }
             }
         }
 
@@ -271,6 +213,19 @@ int main()
         case GameState::Options: options.draw(window); break;
         case GameState::ScoreTable: scoreTable.draw(window); break;
         case GameState::Credits: credits.draw(window); break;
+        case GameState::Paused:
+            window.setView(window.getDefaultView());
+            window.draw(bgSprite);
+            for (auto& s : platforms) window.draw(s);
+            window.setView(view);
+            player.draw(window);
+            window.setView(window.getDefaultView());
+            scoreText.setString("Score: " + std::to_string(score));
+            window.draw(scoreText);
+            window.draw(barBack);
+            window.draw(barFront);
+            pauseScreen.draw(window);
+            break;
         case GameState::Playing:
             window.setView(window.getDefaultView());
             window.draw(bgSprite);

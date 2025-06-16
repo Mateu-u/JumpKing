@@ -1,78 +1,97 @@
 #include "AuthScreen.h"
 
-AuthScreen::AuthScreen(const sf::Font& f)
-    : font(f)
-{
-    // user
-    labelUser = sf::Text("User:", font, 24);
-    labelUser.setPosition(500,200);
-    boxUser.setPosition(580,200); boxUser.setSize({300,30});
-    boxUser.setFillColor({100,100,100,200});
-    textUser = sf::Text("", font, 20);
-    textUser.setPosition(585,205);
+AuthScreen::AuthScreen(const sf::Font& f) : font(f) {
+    usernameLabel.setFont(font);
+    usernameLabel.setString("Użytkownik:");
+    usernameLabel.setCharacterSize(28);
+    usernameLabel.setPosition(570, 250);
 
-    // pass
-    labelPass = sf::Text("Pass:", font, 24);
-    labelPass.setPosition(500,260);
-    boxPass.setPosition(580,260); boxPass.setSize({300,30});
-    boxPass.setFillColor({100,100,100,200});
-    textPass = sf::Text("", font, 20);
-    textPass.setPosition(585,265);
+    passwordLabel.setFont(font);
+    passwordLabel.setString("Hasło:");
+    passwordLabel.setCharacterSize(28);
+    passwordLabel.setPosition(570, 340);
 
-    // buttons
-    btnLogin = sf::Text("Zaloguj (Enter)", font, 22);
-    btnLogin.setPosition(580,330);
-    btnGuest = sf::Text("Graj bez logowania (G)", font, 22);
-    btnGuest.setPosition(580,370);
+    usernameBox.setSize({400, 40});
+    usernameBox.setPosition(570, 280);
+    usernameBox.setFillColor(sf::Color::White);
 
-    // error
-    errorMsg = sf::Text("", font, 20);
-    errorMsg.setFillColor(sf::Color::Red);
-    errorMsg.setPosition(500,420);
+    passwordBox.setSize({400, 40});
+    passwordBox.setPosition(570, 370);
+    passwordBox.setFillColor(sf::Color::White);
+
+    usernameText.setFont(font);
+    usernameText.setCharacterSize(24);
+    usernameText.setFillColor(sf::Color::Black);
+    usernameText.setPosition(580, 285);
+
+    passwordText.setFont(font);
+    passwordText.setCharacterSize(24);
+    passwordText.setFillColor(sf::Color::Black);
+    passwordText.setPosition(580, 375);
+
+    loginButton.setSize({200, 50});
+    loginButton.setPosition(670, 460);
+    loginButton.setFillColor(sf::Color(100, 200, 100));
+
+    loginText.setFont(font);
+    loginText.setString("Zaloguj");
+    loginText.setCharacterSize(24);
+    loginText.setFillColor(sf::Color::White);
+    loginText.setPosition(loginButton.getPosition().x + 40, loginButton.getPosition().y + 10);
+
+    guestButton.setSize({300, 50});
+    guestButton.setPosition(620, 530);
+    guestButton.setFillColor(sf::Color(100, 100, 250));
+
+    guestText.setFont(font);
+    guestText.setString("Kontynuuj bez logowania");
+    guestText.setCharacterSize(22);
+    guestText.setFillColor(sf::Color::White);
+    guestText.setPosition(guestButton.getPosition().x + 20, guestButton.getPosition().y + 12);
 }
 
-void AuthScreen::updateInputText() {
-    textUser.setString(user);
-    textPass.setString(std::string(pass.size(), '*'));
-}
+void AuthScreen::handleEvent(const sf::Event& ev, GameState& state, sf::RenderWindow& window) {
+    if (ev.type == sf::Event::MouseButtonPressed) {
+        auto mouse = sf::Mouse::getPosition(window);
+        usernameActive = usernameBox.getGlobalBounds().contains(mouse.x, mouse.y);
+        passwordActive = passwordBox.getGlobalBounds().contains(mouse.x, mouse.y);
 
-void AuthScreen::handleEvent(const sf::Event& ev, GameState& state) {
+        if (loginButton.getGlobalBounds().contains(mouse.x, mouse.y)) {
+            // Tu: sprawdź dane logowania
+            state = GameState::Playing;
+        }
+        if (guestButton.getGlobalBounds().contains(mouse.x, mouse.y)) {
+            state = GameState::Playing;
+        }
+    }
+
     if (ev.type == sf::Event::TextEntered) {
-        char c = ev.text.unicode;
-        if (c == 8) {
-            if      (activeUser && !user.empty()) user.pop_back();
-            else if (!activeUser && !pass.empty()) pass.pop_back();
+        char c = static_cast<char>(ev.text.unicode);
+        if (c >= 32 && c <= 126) {
+            if (usernameActive) usernameInput += c;
+            if (passwordActive) passwordInput += c;
         }
-        else if (c >= 32 && c < 127) {
-            if (activeUser) user.push_back(c);
-            else            pass.push_back(c);
-        }
-        updateInputText();
-    }
-    else if (ev.type == sf::Event::KeyPressed) {
-        if      (ev.key.code == sf::Keyboard::Tab)   activeUser = !activeUser;
-        else if (ev.key.code == sf::Keyboard::Enter) {
-            if (DatabaseManager::authenticate(user, pass)) {
-                state = GameState::Playing;
-            } else {
-                errorMsg.setString("Błąd logowania!");
-            }
-        }
-        else if (ev.key.code == sf::Keyboard::G) {
-            state = GameState::Playing; // gra jako gość
+        if (ev.text.unicode == 8) {  // backspace
+            if (usernameActive && !usernameInput.empty())
+                usernameInput.pop_back();
+            if (passwordActive && !passwordInput.empty())
+                passwordInput.pop_back();
         }
     }
+
+    usernameText.setString(usernameInput);
+    passwordText.setString(std::string(passwordInput.length(), '*')); // ukrycie hasła
 }
 
 void AuthScreen::draw(sf::RenderWindow& win) {
-    win.draw(labelUser);
-    win.draw(boxUser);
-    win.draw(textUser);
-    win.draw(labelPass);
-    win.draw(boxPass);
-    win.draw(textPass);
-    win.draw(btnLogin);
-    win.draw(btnGuest);
-    if (!errorMsg.getString().isEmpty())
-        win.draw(errorMsg);
+    win.draw(usernameLabel);
+    win.draw(passwordLabel);
+    win.draw(usernameBox);
+    win.draw(passwordBox);
+    win.draw(usernameText);
+    win.draw(passwordText);
+    win.draw(loginButton);
+    win.draw(loginText);
+    win.draw(guestButton);
+    win.draw(guestText);
 }

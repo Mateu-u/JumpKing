@@ -8,6 +8,7 @@ SOURCES += \
     databasemanager.cpp \
     main.cpp \
     optionsscreen.cpp \
+    pausescreen.cpp \
     platformgenerator.cpp \
     player.cpp \
     WelcomeScreen.cpp \
@@ -24,7 +25,8 @@ HEADERS += \
     AuthScreen.h \
     ScoreTableScreen.h \
     CreditsScreen.h \
-    optionsscreen.h
+    optionsscreen.h \
+    pausescreen.h
 
 INCLUDEPATH += \
     "C:/SFML-2.5.1/include" \

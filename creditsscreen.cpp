@@ -35,7 +35,7 @@ CreditsScreen::CreditsScreen(const sf::Font& f)
     exitButton.setPosition(670.f, 800.f);
 
     exitText.setFont(font);
-    exitText.setString("Wyjście");
+    exitText.setString("Wyjscie");
     exitText.setCharacterSize(28);
     exitText.setFillColor(sf::Color::White);
     sf::FloatRect textRect = exitText.getLocalBounds();

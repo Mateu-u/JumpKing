@@ -39,7 +39,7 @@ ScoreTableScreen::ScoreTableScreen(const sf::Font& f)
     exitButton.setPosition(670.f, 800.f); // środek przy szerokości 1540
 
     exitText.setFont(font);
-    exitText.setString("Wyjście");
+    exitText.setString("Wyjscie");
     exitText.setCharacterSize(28);
     exitText.setFillColor(sf::Color::White);
     sf::FloatRect textRect = exitText.getLocalBounds();

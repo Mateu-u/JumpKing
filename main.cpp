@@ -55,14 +55,21 @@ int main()
         return -1;
     }
 
-    sf::RenderWindow window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Jump King");
+    // Okno
+    sf::RenderWindow window(
+        sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT),
+        "Jump King"
+        );
     window.setFramerateLimit(60);
-
     sf::Font uiFont;
     if (!uiFont.loadFromFile("C:/Users/CP24/Documents/JumpKing/Rolie Twily.otf")) {
         std::cerr << "ERROR loading Rolie Twily.otf\n";
         return -1;
     }
+
+    sf::Clock fpsClock;
+    int frameCounter = 0;
+    float fpsTimer = 0.f;
 
     WelcomeScreen welcome(uiFont, RES_DIR + "background_0.png");
     AuthScreen auth(uiFont);
@@ -75,7 +82,7 @@ int main()
         { "##             #", "##       #######", "##           ###", "##             #", "####           #", "########       #", "#####          #", "##             #", "##           ###", "#        #######", "#         ######", "#         ######", "#####     ######", "################" },
         { "#              #", "###      #######", "#              #", "#              #", "#              #", "#  #####       #", "#              #", "#           ####", "####           #", "#              #", "#        ####  #", "#              #", "#####          #", "#              #" },
         { "#              #", "#              #", "#        #######", "#              #", "###            #", "#####          #", "########       #", "##             #", "##           ###", "#         ######", "#       ########", "#              #", "####       #####", "#              #" },
-        { "#              #", "#        #######", "#            ###", "###            #", "####           #", "#####          #", "########       #", "##             #", "##           ###", "#         ######", "#       ########", "#              #", "#          #####", "#####          #" },
+        { "#              #", "#       ########", "#            ###", "###            #", "####           #", "#####          #", "########       #", "##             #", "##           ###", "#         ######", "#       ########", "#              #", "#          #####", "#####          #" },
         { "################", "##       #######", "##           ###", "##             #", "####           #", "#####          #", "########       #", "###            #", "##           ###", "#         ######", "#       ###   ##", "#              #", "####           #", "#         ###  #" }
     };
 
@@ -241,6 +248,14 @@ int main()
             window.draw(barFront);
             break;
         }
+        frameCounter++;
+        fpsTimer += fpsClock.restart().asSeconds();
+        if (fpsTimer >= 1.0f) {
+            std::cout << "FPS: " << frameCounter << std::endl;
+            frameCounter = 0;
+            fpsTimer = 0.f;
+        }
+
         window.display();
     }
 

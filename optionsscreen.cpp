@@ -31,9 +31,9 @@ OptionsScreen::OptionsScreen(const sf::Font& f, const sf::Vector2f& windowSize)
     makeSlider(musicSlider, "Music Volume", 400.f);
 
     // --- przycisk Wczytaj tło ---
-    createButton(loadBgBtn, "Wczytaj tło", {(winSize.x-200)/2, 500.f});
+//    createButton(loadBgBtn, "Wczytaj tło", {(winSize.x-200)/2, 500.f});
     // --- przycisk Wróć ---
-    createButton(backBtn,   "Wróć",       {(winSize.x-200)/2, 580.f});
+    createButton(backBtn,   "Wyjscie",       {(winSize.x-200)/2, 580.f});
 }
 
 void OptionsScreen::createButton(Button& b, const std::string& txt, const sf::Vector2f& pos) {

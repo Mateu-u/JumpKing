@@ -76,8 +76,8 @@ void Player::applyVelocityX() {
 }
 
 int Player::checkCollisions(const sf::FloatRect& prevBounds,
-                          const sf::FloatRect& currBounds,
-                          std::vector<sf::RectangleShape>& platforms)
+                            const sf::FloatRect& currBounds,
+                            std::vector<sf::RectangleShape>& platforms)
 {
     isOnGround = false;
     int landedIndex = -1;
@@ -121,14 +121,25 @@ int Player::checkCollisions(const sf::FloatRect& prevBounds,
             }
             // Kolizja z lewej strony
             else if (minOverlap == overlapLeft) {
-                sprite.setPosition(platformLeft - currBounds.width/2.0f, sprite.getPosition().y);
-                velocity.x = 0.0f;
+                sprite.setPosition(platformLeft - currBounds.width / 2.0f, sprite.getPosition().y);
+
+                // Jeśli gracz nie stoi na ziemi (czyli skacze) — odbij się
+                if (!isOnGround && velocity.x > 0) {
+                    velocity.x = -velocity.x * 0.4f;  // odbicie w lewo z tłumieniem
+                } else {
+                    velocity.x = 0.0f;
+                }
             }
-            // Kolizja z prawej strony
             else if (minOverlap == overlapRight) {
-                sprite.setPosition(platformRight + currBounds.width/2.0f, sprite.getPosition().y);
-                velocity.x = 0.0f;
+                sprite.setPosition(platformRight + currBounds.width / 2.0f, sprite.getPosition().y);
+
+                if (!isOnGround && velocity.x < 0) {
+                    velocity.x = -velocity.x * 0.4f;  // odbicie w prawo z tłumieniem
+                } else {
+                    velocity.x = 0.0f;
+                }
             }
+
         }
     }
 

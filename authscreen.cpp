@@ -2,12 +2,12 @@
 
 AuthScreen::AuthScreen(const sf::Font& f) : font(f) {
     usernameLabel.setFont(font);
-    usernameLabel.setString("Użytkownik:");
+    usernameLabel.setString("Uzytkownik:");
     usernameLabel.setCharacterSize(28);
     usernameLabel.setPosition(570, 250);
 
     passwordLabel.setFont(font);
-    passwordLabel.setString("Hasło:");
+    passwordLabel.setString("Haslo:");
     passwordLabel.setCharacterSize(28);
     passwordLabel.setPosition(570, 340);
 

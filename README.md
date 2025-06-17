@@ -21,3 +21,28 @@ Projekt został opracowany przez studentów AiR w ramach kursu programowania i g
 
 - Mateusz Tomaszewski
 - Witkor Witczak
+
+
+# JumpKing
+
+**Jump King** is a 2D platformer game created by students as a semester project. The main goal is to climb increasingly difficult platforms by precisely controlling the character’s jump. The game is written in **C++** using the **SFML** graphics library.
+
+## Main Features
+
+- Classic platformer-style character movement.
+- Jump charging — the longer you hold the spacebar, the higher you jump.
+- Simple collision system with platforms and walls.
+- Wall bouncing while jumping.
+- Login and registration menu with progress saved to a local SQLite database.
+- Custom-made sprite animations.
+
+## Graphics
+
+All game graphics (player sprites, platforms, background, etc.) were generated using **ChatGPT’s image generation feature**.
+
+## Authors
+
+This project was developed by students of **Automation and Robotics (AiR)** as part of a programming and computer graphics course:
+
+- Mateusz Tomaszewski  
+- Witkor Witczak
